@@ -1,7 +1,3 @@
-# https://www.naiin.com/category?category_1_code=16&product_type_id=3&pageNo=1
-# https://www.naiin.com/category?category_1_code=16&product_type_id=3&pageNo=2
-# https://www.naiin.com/category?category_1_code=16&product_type_id=3&pageNo=3
-
 from playwright.sync_api import sync_playwright
 from seleniumbase import sb_cdp
 import builtins
@@ -102,12 +98,6 @@ def scrape_book_detail(page, url):
         "description": description,
         "url": url,
     }
-
-    # builtins.print(f"  ✅ Title: {title}")
-    # builtins.print(f"  ✅ Author: {author}")
-    # builtins.print(f"  ✅ Publisher: {publisher}")
-    # builtins.print(f"  ✅ Price: {price}")
-    # builtins.print(f"  ✅ Description: {description}")
     return result
 
 
@@ -123,7 +113,7 @@ context = browser.contexts[0]
 page = context.pages[0]
 
 # get all book link
-file = "computer_ebook_links.txt"
+file = os.path.join("data", "computer_ebook_links.txt")
 if os.path.exists(file):
     with open(file, "r") as f:
         computer_ebook_links = [line.strip() for line in f.readlines() if line.strip()]
@@ -147,8 +137,9 @@ for i, url in enumerate(computer_ebook_links):
     page.wait_for_timeout(1000)
 
 df = pd.DataFrame(all_books_details)
-df.to_csv("books.csv", index=False, encoding="utf-8-sig")
-builtins.print(f"\n✅ บันทึกแล้ว {len(df)} เล่ม → books.csv")
+# df.to_csv("data/books.csv", index=False, encoding="utf-8-sig")
+df.to_csv(os.path.join("data", "books.csv"), index=False)
+builtins.print(f"\nบันทึกแล้ว {len(df)} เล่ม --> books.csv")
 
 playwright.stop()
 sb.driver.quit()
