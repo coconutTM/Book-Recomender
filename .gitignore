@@ -4,13 +4,16 @@ __pycache__/
 *.pyc
 .venv/
 venv
+test.py
 
 # Lock File 
 *.lock 
 
+# some txt file 
+lol.txt
+
 # Data file 
-data/books.csv
-data/books_cleaned.csv
+# data/
 
 # Browse cache
 downloaded_files/
