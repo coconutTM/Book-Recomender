@@ -6,6 +6,7 @@ from recommender import (
     search_book,
 )
 from cleanup import clean
+from download_images import download
 
 import os, time
 import glob
@@ -31,9 +32,8 @@ if __name__ == "__main__":
 
         mode = input("เลือก (1/2 or 0): ").strip()
         if mode == "1":
-            try:
-                csv_files = glob.glob(os.path.join("data", "*.csv"))
-            except:
+            csv_files = glob.glob(os.path.join("data", "*.csv"))
+            if not csv_files:
                 print("ไม่พบไฟล์ csv ต้อง Scrape ข้อมูลก่อนครับ")
                 continue
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
                 print("เริ่มสร้างไฟล์ .txt")
                 txt_name = input("ตั้งชื่อไฟล์ (ไม่ต้องใส่ .txt): ")
                 file = os.path.join("data", f"{txt_name}.txt")
-                
+
                 sb = sb_cdp.Chrome()
                 sb.get("https://www.naiin.com")
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                 page = context.pages[0]
 
                 # get all book link
-                category_list = ["16", "17"] # computer, หนังสือเตรียมสอบ
+                category_list = ["16"]  # computer ebook
                 all_ebook_links = get_all_book_links(page, category_list)
                 with open(file, "w") as f:
                     for link in all_ebook_links:
@@ -134,11 +134,11 @@ if __name__ == "__main__":
                 sb.driver.quit()
 
             elif scrape_mode == "2":
-                try:
-                    all_txt_files = glob.glob(os.path.join("data", "*.txt"))
-                except:
+                all_txt_files = glob.glob(os.path.join("data", "*.txt"))
+                if not all_txt_files:
                     print("ไม่พบไฟล์ txt ต้อง Scrape links ก่อนครับ")
                     continue
+
                 print(f"ไฟล์ .txt ทั้งหมด")
                 for i, file in enumerate(all_txt_files):
                     print(f"{i + 1}. {os.path.basename(file)}")
@@ -147,8 +147,10 @@ if __name__ == "__main__":
                 print(f"เลือก '{file_name}'")
                 links_file = os.path.join("data", file_name)
                 with open(links_file, "r") as f:
-                    ebook_links = [line.strip() for line in f.readlines() if line.strip()]
-  
+                    ebook_links = [
+                        line.strip() for line in f.readlines() if line.strip()
+                    ]
+
                 sb = sb_cdp.Chrome()
                 sb.get("https://www.naiin.com")
 
@@ -167,31 +169,31 @@ if __name__ == "__main__":
                         all_books_details.append(book)
                     # page.wait_for_timeout(1000)
                     time.sleep(1)
-                
+
                 df = pd.DataFrame(all_books_details)
                 # df.to_csv("data/books.csv", index=False, encoding="utf-8-sig")
                 csv_files = f"{file_name.split(".")[0]}.csv"
                 df.to_csv(os.path.join("data", csv_files), index=False)
                 print(f"\nบันทึกแล้ว {len(df)} เล่ม --> {csv_files}")
-
                 playwright.stop()
                 sb.driver.quit()
 
             elif scrape_mode == "3":
-                try:
-                    all_txt_files = glob.glob(os.path.join("data", "*.csv"))
-                except:
+                all_csv_files = glob.glob(os.path.join("data", "*.csv"))
+                if not all_csv_files:
                     print("ไม่พบไฟล์ .csv ต้อง Scrape ก่อนครับ")
                     continue
-                print(f"ไฟล์ .csv ทั้งหมด")
-                for i, file in enumerate(all_txt_files):
-                    print(f"{i + 1}. {os.path.basename(file)}")
-                sel_txt = int(input("เลือกไฟล์ที่: "))
-                file_name = os.path.basename(all_txt_files[sel_txt - 1])
-                clean_file = clean(file_name) 
 
+                print(f"ไฟล์ .csv ทั้งหมด")
+                for i, file in enumerate(all_csv_files):
+                    print(f"{i + 1}. {os.path.basename(file)}")
+                sel_csv = int(input("เลือกไฟล์ที่: "))
+                file_name = os.path.basename(all_csv_files[sel_csv - 1])
+                clean_file = clean(file_name)
 
         elif mode == "0" or mode.lower() == "exit":
+            # playwright.stop()
+            # sb.driver.quit()
             exit()
         else:
             print("**เลือก (1/2 or 0) เท่านั้น!**\n")
