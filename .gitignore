@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv
 test.py
+download_images.py
 
 # Lock File 
 *.lock 

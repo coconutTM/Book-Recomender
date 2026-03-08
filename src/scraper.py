@@ -18,7 +18,7 @@ def reconnect_wifi():
 
 
 def get_all_book_links(page, category_list):
-    all_links = []
+    all_links = [] # make list of book links 
 
     for category_code in category_list:
         builtins.print(f"กำลังดึง: {category_code}")
@@ -29,40 +29,43 @@ def get_all_book_links(page, category_list):
             url = f"https://www.naiin.com/category?category_1_code={category_code}&product_type_id=3&pageNo={page_no}"
             builtins.print(f"กำลังดึงหน้า: {page_no}...")
 
+            # เชื่อมเข้า url  
             page.goto(url)
-            page.wait_for_load_state("domcontentloaded")
+            page.wait_for_load_state("domcontentloaded") # รอ HTML โหลดเสร็จ
 
-            # ✅ รอจนกว่า element จะโหลดจริงๆ ไม่ใช่รอตายตัว
             try:
-                page.wait_for_selector("a.item-img-block", timeout=60000)
+                page.wait_for_selector("a.item-img-block", timeout=20000)
             except:
                 retry += 1
                 builtins.print(f"retry = {retry}")
-                builtins.print("รอ 60 วิแล้วยังไม่เจอ element หยุด")
-                if retry >= 20:
-                    builtins.print("wifi หรืออะไรของมึงเนี่ย")
-                    break
-                reconnect_wifi()
-                continue
-
+                builtins.print("รอ 20 วิแล้วยังไม่เจอ element หยุด")
+                if retry >= 5:
+                    builtins.print("ลอง 5 ครั้งแล้วยังไม่ได้")
+                    break # ออกจาก loop ถ้า retry 5 ครั้งแล้วยังไม่ได้
+                builtins.print("wait 30 sec...")
+                time.sleep(30) # รอ 30 วินาที ให้เน็ตกลับมา
+                continue # กลับไป goto url ใหม่
+            
+            # ดึง url จากทุก item 
             items = page.query_selector_all("a.item-img-block")
             if not items:
                 builtins.print("ไม่พบหนังสือ หยุด")
                 break
 
             for item in items:
-                href = item.get_attribute("href")
+                href = item.get_attribute("href") # ได้ "/product/detail/xxxxx"
                 if href:
                     full_url = (
                         f"https://www.naiin.com{href}" if href.startswith("/") else href
                     )
                     if full_url not in all_links:
-                        all_links.append(full_url)
+                        all_links.append(full_url) # กัน url ซ้ำ 
 
             builtins.print(
                 f"หมวด {category_code}:  หน้า {page_no}: พบ {len(items)} เล่ม (รวม {len(all_links)})"
             )
 
+            # เช็คว่ามีหน้าต่อไปมั้ย (มีปุ่ม) 
             next_btn = page.query_selector(".nav-pag.pag-next")
             if not next_btn:
                 builtins.print("ถึงหน้าสุดท้ายแล้ว")
@@ -79,32 +82,34 @@ def scrape_book_detail(page, url):
     while True:
         try:
             page.goto(url)
-            page.wait_for_load_state("domcontentloaded")
-            page.wait_for_selector("h1.title-topic", timeout=60000)
+            page.wait_for_load_state("domcontentloaded") # รอ HTML โหลดเสร็จ 
+            page.wait_for_selector("h1.title-topic", timeout=20000) # รอชื่อหนังสือ 
         except:
             retry += 1
             builtins.print(f"retry = {retry}")
-            builtins.print(f"รอ 60 วินาทีแล้วโหลดไม่ได้: {url}")
-            if retry >= 20:
-                builtins.print("wifi หรืออะไรของมึงเนี่ย")
-                return None
-            reconnect_wifi()
+            builtins.print(f"รอ 20 วินาทีแล้วโหลดไม่ได้: {url}")
+            if retry >= 5:
+                builtins.print("ลอง 5 ครั้งแล้วยังไม่ได้")
+                return None # ข้ามเล่มนี้ไปเลย 
+            builtins.print("wait 30 sec...")
+            time.sleep(30)
             continue
 
         # ชื่อหนังสือ
         title = ""
         el = page.query_selector("h1.title-topic")
         if el:
-            title = el.inner_text().strip()
+            title = el.inner_text().strip() # ดึงข้อความแล้วตัด whitespace 
 
         # ผู้แต่ง และ สำนักพิมพ์ — class เดียวกัน
+        # เลยแยกด้วย index แทน
         author = ""
         publisher = ""
         links = page.query_selector_all("a.inline-block.link-book-detail")
         if len(links) > 0:
             author = links[0].inner_text().strip()
         if len(links) > 1:
-            publisher = links[1].inner_text().strip()
+            publisher = links[1].inner_text().strip() # ดึงข้อความแล้วตัด whitespace
 
         # ราคา
         price = ""
@@ -116,10 +121,11 @@ def scrape_book_detail(page, url):
         description = ""
         el = page.query_selector("div.book-decription")
         if el:
-            raw = el.inner_text().strip()
-            lines = raw.split("\n")
+            raw = el.inner_text().strip() 
+            lines = raw.split("\n") # แยกข้อความเป็น list 
+            # ตัดข้อความที่เริ่มต้นด้วย "รายละเอียด" ออก เพราะเป็น label ไม่ใช่เนื้อหา 
             lines = [l for l in lines if not l.strip().startswith("รายละเอียด")]
-            description = "\n".join(lines).strip()
+            description = "\n".join(lines).strip() # รวมกลับไปเป็น string 
         
         # url to picture
         img_url = ""
@@ -141,15 +147,26 @@ def scrape_book_detail(page, url):
 
 # --- Main ---
 if __name__ == "__main__":
+
     # setup selenium
-    sb = sb_cdp.Chrome()
+    # เปิด chrome ขึ้นมา 1 หน้าต่าง โดยมี seleniumbase จัดการ cloudflare bypass ให้อัตโนมัติ
+    sb = sb_cdp.Chrome() 
+    # เปิดหน้า naiin.com ใน browser นั้น เพื่อให้ Cloudflare เห็นว่าเป็น browser จริง และผ่าน challenge ก่อน
     sb.get("https://www.naiin.com")
 
+    # ดึง CDP endpoint
     endpoint_url = sb.get_endpoint_url()
-    playwright = sync_playwright().start()
-    browser = playwright.chromium.connect_over_cdp(endpoint_url)
+
+    # เชื่อมเข้า Chrome ผ่าน CDP endpoint
+    playwright = sync_playwright().start() 
+    browser = playwright.chromium.connect_over_cdp(endpoint_url) 
+
+    # Browser profile
     context = browser.contexts[0]
-    page = context.pages[0]
+    page = context.pages[0] # use first tab of browser 
+
+    # ---------------------------------------------------
+
 
     # get all book link
     file = os.path.join("data", "ebook_links.txt")

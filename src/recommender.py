@@ -7,42 +7,48 @@ from sklearn.metrics.pairwise import cosine_similarity
 # Function recommend!!
 # แนะนำตามความสนใจ
 def recommend_by_interest(query, df, vectorizer, tfidf_metrix, top_n=10):
-    # แปลงเป็น vector เพื่อคำนวณ
+    # แปลงเป็น vector เพื่อคำนวณ  ใช้ vocabulary เดิมที่ fit ไว้ก่อนหน้า
     query_vec = vectorizer.transform([query])
 
-    # คำนวณ cosine-similarity กับหนังสือทุกเล่ม
-    scores = cosine_similarity(query_vec, tfidf_metrix).flatten()
+    # คำนวณ cosine-similarity กับหนังสือทุกเล่ม ได้ array ของคะแนน
+    scores = cosine_similarity(query_vec, tfidf_metrix).flatten() # .flatten() = แปลงเป็น array 1 มิติ 
 
-    # เรียงคะแนนจากมากที่สุด แล้วเอาแค่ top 10
     top_indices = scores.argsort()[::-1][:top_n]
+    # argsort() = เรียง index คะแนนจากน้อยไปมาก [2, 0, 5, 3]
+    # [::-1] = กลับเป็นมากไปน้อย [3, 5, 0, 2]
+    # [:top_n] = เอาแค่ top_n เล่ม ก็คือ 10 เล่ม
 
     results = df.iloc[top_indices][
         ["title", "author", "publisher", "price", "url"]
-    ].copy()
-    results["score"] = scores[top_indices].round(4)
+    ].copy() # .copy() = ทำสำเนาใหม่ ไม่ได้แก้ df ต้นฉบับ
+    results["score"] = scores[top_indices].round(4) # ใส่เลขกลมๆ 4 ตำแหน่ง 
     results = results[results["score"] > 0]  # ตัดเล่มที่ไม่เกี่ยวข้องออก
 
-    return results.reset_index(drop=True)
+    return results.reset_index(drop=True) # รีเซ็ต index แล้วตัด column index ทิ้ง 
 
 
 # แนะนำตามหนังสือที่สนใจ
 def recommend_by_title(title, df, vectorizer, tfidf_metrix, top_n=10):
+    # หาเล่มที่ตรงกับเล่มที่เราสนใจ
     matches = df[df["title"].str.contains(title, case=False, na=False, regex=False)]
 
+    # ถ้าไม่เจอ 
     if matches.empty:
-        return None, None
+        return None, None # return 2 ค่า เพราะ caller รับ 2 ค่า
 
     # เอาเล่มแรกที่เจอ
-    book = matches.iloc[0]
-    book_idx = matches.index[0]
+    book = matches.iloc[0] # เอา row แรก
+    book_idx = matches.index[0] # เอา index ของเล่มนั้นจริงใน df (ถ้าผ่าน filter มาจะไม่ใช่ 0 เสมอไป)
 
     # เอา vector หนังสือเล่มนั้นไปเทียบกับทุกเล่ม
-    book_vec = tfidf_metrix[book_idx]
-    scores = cosine_similarity(book_vec, tfidf_metrix).flatten()
+    book_vec = tfidf_metrix[book_idx] 
+    scores = cosine_similarity(book_vec, tfidf_metrix).flatten() # แปลงเป็น array 1 มิติ
 
     # เรียงลำดับจากมากไปน้อย แล้วตัดตัวเองออก
     top_indices = scores.argsort()[::-1]
-    top_indices = [i for i in top_indices if i != book_idx][:top_n]
+
+    # เอามาแค่ 10 เล่ม
+    top_indices = [i for i in top_indices if i != book_idx][:top_n] 
 
     results = df.iloc[top_indices][
         ["title", "author", "publisher", "price", "url"]
@@ -50,11 +56,13 @@ def recommend_by_title(title, df, vectorizer, tfidf_metrix, top_n=10):
     results["score"] = scores[top_indices].round(4)
     results = results[results["score"] > 0]  # ตัดเล่มที่ไม่เกี่ยวข้องออก
 
-    return book["title"], results.reset_index(drop=True)
+    return book["title"], results.reset_index(drop=True) # รีเซ็ต index แล้วตัด column index ทิ้ง
+    # return ชื่อหนังสือ กับ dataframe ผลลัพธ์
 
 
 # Print data
 def print_results(results):
+    # ถ้าไม่มี
     if results is None or results.empty:
         print("ไม่พบหนังสือที่เกี่ยวข้อง ลองพิมพ์คำอื่นดูครับ")
         return
@@ -75,7 +83,10 @@ def print_results(results):
 def search_book(title, df):
     # ค้นหาหนังสือจากชื่อที่คล้ายกัน return dataframe
     matches = df[df["title"].str.contains(title, case=False, na=False, regex=False)]
-    return matches.reset_index()
+    # case=False: ไม่สนตัวพิมพ์เล็กหรือตัวพิมพ์ใหญ่
+    # na=False: ถ้า title ว่างให้ถือว่าเป็น False ไปเลย
+    # regex=False: ปกติแล้วถ้า title มี () [] . จะถือว่าเป็น regex, ตั้งเป็น False ให้มันมองว่าเป็น string ปกติแทน
+    return matches.reset_index() # reset index แต่เก็บ index เดิมไว้เผื่อใช้ 
 
 
 
