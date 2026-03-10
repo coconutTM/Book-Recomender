@@ -12,7 +12,7 @@ app = FastAPI()
 # =========================================================
 # โหลดข้อมูลตอนเริ่ม server
 # =========================================================
-df = pd.read_csv(os.path.join("data", "computer_cleaned.csv"))
+df = pd.read_csv(os.path.join("data", "tmp_cleaned.csv"))
 df["content"] = (df["title"] + " " + df["description"]).fillna("")
 
 vectorizer = TfidfVectorizer()

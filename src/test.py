@@ -4,7 +4,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 
-df = pd.read_csv(os.path.join("data", "computer_cleaned.csv"))
+df = pd.read_csv(os.path.join("data", "tmp_cleaned.csv"))
 df["content"] = (df["title"] + " " + df["description"]).fillna("")
 
 vectorizer = TfidfVectorizer()
@@ -32,15 +32,17 @@ for query in test_queries:
     scores = cosine_similarity(query_vec, tfidf_matrix).flatten()
     top_scores = sorted(scores, reverse=True)[:10]  # top 10
 
-    all_results.append({
-        "query": query,
-        "top1_score":  round(top_scores[0], 4),   # อันดับ 1
-        "top5_avg":    round(np.mean(top_scores[:5]), 4),   # เฉลี่ย top 5
-        "top10_avg":   round(np.mean(top_scores), 4),       # เฉลี่ย top 10
-        "found_books": sum(1 for s in top_scores if s > 0), # เล่มที่เกี่ยวข้อง
-    })
+    all_results.append(
+        {
+            "query": query,
+            "top1_score": round(top_scores[0], 4),  # อันดับ 1
+            "top5_avg": round(np.mean(top_scores[:5]), 4),  # เฉลี่ย top 5
+            "top10_avg": round(np.mean(top_scores), 4),  # เฉลี่ย top 10
+            "found_books": sum(1 for s in top_scores if s > 0),  # เล่มที่เกี่ยวข้อง
+        }
+    )
 
-# ===== แสดงผล =====
+# แสดงผล
 result_df = pd.DataFrame(all_results)
 print(result_df.to_string(index=False))
 print()
@@ -53,18 +55,3 @@ print(f"Query ที่หาเล่มได้    : {(result_df['found_books
 # บันทึกลง csv
 result_df.to_csv("data/evaluation_results.csv", index=False)
 print("\nบันทึกแล้ว --> evaluation_results.csv")
-
-## ผลลัพธ์ที่ได้ประมาณนี้
-"""
-query                  top1_score  top5_avg  top10_avg  found_books
-python programming         0.4821    0.3102     0.2341           10
-machine learning           0.5103    0.3891     0.2876           10
-network security           0.3210    0.2104     0.1432            8
-...
-
-=== ภาพรวมทั้งหมด ===
-Top-1 Score เฉลี่ย  : 0.4102
-Top-5 Score เฉลี่ย  : 0.2981
-Top-10 Score เฉลี่ย : 0.2103
-Query ที่หาเล่มได้    : 10/10
-"""
